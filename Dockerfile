@@ -9,8 +9,17 @@ RUN cd /usr/local/bin && \
     mv ffmpeg-git-*-amd64-static/ffmpeg . && \
     ln -s /usr/local/bin/ffmpeg/ffmpeg /usr/bin/ffmpeg
 
+
+FROM public.ecr.aws/bitnami/golang:1.15.5 as function-builder
+
+WORKDIR /build
+COPY . .
+RUN go build -o media-converter main.go
+
 FROM public.ecr.aws/lambda/go:latest
 COPY --from=ffmpeg-builder /usr/local/bin/ffmpeg/ffmpeg /usr/local/bin/ffmpeg/ffmpeg
 RUN ln -s /usr/local/bin/ffmpeg/ffmpeg /usr/bin/ffmpeg
 
-ENTRYPOINT /bin/bash
+COPY --from=function-builder /build/media-converter /var/task/media-converter
+
+CMD [ "media-converter" ]
