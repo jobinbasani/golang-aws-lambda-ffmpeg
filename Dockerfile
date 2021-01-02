@@ -6,9 +6,7 @@ RUN cd /usr/local/bin && \
     wget https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz && \
     tar xvf *.tar.xz && \
     rm -f *.tar.xz && \
-    mv ffmpeg-git-*-amd64-static/ffmpeg . && \
-    ln -s /usr/local/bin/ffmpeg/ffmpeg /usr/bin/ffmpeg
-
+    mv ffmpeg-git-*-amd64-static/ffmpeg .
 
 FROM public.ecr.aws/bitnami/golang:1.15.5 as function-builder
 

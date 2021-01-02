@@ -11,13 +11,16 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"log"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 )
 
 func main() {
 	lambda.Start(handler)
 }
 
-func handler(ctx context.Context, s3Event events.S3Event) error {
+func handler(_ context.Context, s3Event events.S3Event) error {
 
 	record := s3Event.Records[0]
 
@@ -38,5 +41,22 @@ func handler(ctx context.Context, s3Event events.S3Event) error {
 		panic(err)
 	}
 	log.Printf("Downloaded %s", file.Name())
+	outputFile := strings.Replace(file.Name(), filepath.Ext(file.Name()), ".webm", 1)
+	cmd := exec.Command("ffmpeg", "-i", file.Name(), outputFile)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatalf("cmd.Run() failed with %s\n", err)
+	}
+	log.Printf("Execution output:\n%s\n", string(out))
+	output, err := os.Open(outputFile)
+	if err != nil {
+		panic(err)
+	}
+	_, err = s3.New(sess).PutObject(&s3.PutObjectInput{
+		Bucket: &record.S3.Bucket.Name,
+		Key:    aws.String(filepath.Base(outputFile)),
+		Body:   output,
+	})
+	log.Printf("Copied %s to %s", outputFile, record.S3.Bucket.Name)
 	return nil
 }
